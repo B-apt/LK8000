@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6.0)
 
 project(tracking_http)
 
-find_package (curl CONFIG REQUIRED)
+find_package (CURL REQUIRED)
 
 add_library (
 	${PROJECT_NAME}
@@ -15,5 +15,5 @@ add_library (
 target_link_libraries(
 	${PROJECT_NAME}
 
-	curl::curl
+	CURL::libcurl
 )
