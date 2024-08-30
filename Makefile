@@ -1606,6 +1606,34 @@ cxx-flags	=$(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) $(CPPFLAGS_$(dirtarget)) $(TARGET
 .DEFAULT_GOAL := all
 .PHONY: FORCE all clean cleani tags rebuild cppcheck install
 
+#############################################################################################################
+#		START UNIT TEST BLOCK with Googletest
+
+GTEST_FLAGS = -lgtest -lgtest_main -pthread
+TESTS_DIR = tests
+TESTS_BUILD_DIR = $(TESTS_DIR)/build
+TESTS_BIN = $(TESTS_BUILD_DIR)/test_runner
+TESTS_SRCS = $(wildcard $(TESTS_DIR)/*.cpp)
+TESTS_OBJS = $(patsubst $(TESTS_DIR)/%.cpp,$(TESTS_BUILD_DIR)/%.o,$(TESTS_SRCS))
+
+# Create the build directory if it doesn't exist
+$(shell mkdir -p $(TESTS_BUILD_DIR))
+
+$(info $(TESTS_SRCS))
+$(info $(TESTS_OBJS))
+
+$(TESTS_BIN): $(TESTS_OBJS)
+	$(CXX) $(TESTS_OBJS) -o $(TESTS_BIN) $(GTEST_FLAGS)
+
+$(TESTS_BUILD_DIR)/%.o: $(TESTS_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+test: $(TESTS_BIN)
+	./$(TESTS_BIN)
+
+#		END UNIT TEST
+#############################################################################################################
+
 all:	$(DISTRIB_OUTPUT) $(OUTPUTS)
 	
 rebuild:

@@ -23,9 +23,11 @@ void DistanceToNext(NMEA_INFO *Basic, DERIVED_INFO *Calculated)
       double w0lat, w0lon;
 
       if(DoOptimizeRoute()) {
+        StartupStore(_T(". DistanceToNext DoOptimizeRoute 1%s"), NEWLINE);
         w0lat = Task[ActiveTaskPoint].AATTargetLat;
         w0lon = Task[ActiveTaskPoint].AATTargetLon;
       } else {
+        StartupStore(_T(". DistanceToNext DoOptimizeRoute 2%s"), NEWLINE);
         w0lat = WayPointList[TASKINDEX].Latitude;
         w0lon = WayPointList[TASKINDEX].Longitude;
       }
@@ -40,6 +42,8 @@ void DistanceToNext(NMEA_INFO *Basic, DERIVED_INFO *Calculated)
       if (UseAATTarget()
 	  && (ActiveTaskPoint>0) && 
           ValidTaskPoint(ActiveTaskPoint+1)) {
+
+            StartupStore(_T(". DistanceToNext DoOptimizeRoute UseAATTarget 1%s"), NEWLINE);
 
         w1lat = Task[ActiveTaskPoint].AATTargetLat;
         w1lon = Task[ActiveTaskPoint].AATTargetLon;
@@ -62,9 +66,11 @@ void DistanceToNext(NMEA_INFO *Basic, DERIVED_INFO *Calculated)
         // JMW set waypoint bearing to start direction if in start sector
 
         if (UseAATTarget()) {
+          StartupStore(_T(". DistanceToNext DoOptimizeRoute UseAATTarget 2%s"), NEWLINE);
           w1lat = Task[ActiveTaskPoint+1].AATTargetLat;
           w1lon = Task[ActiveTaskPoint+1].AATTargetLon;
         } else {
+          StartupStore(_T(". DistanceToNext DoOptimizeRoute UseAATTarget 3%s"), NEWLINE);
           w1lat = WayPointList[Task[ActiveTaskPoint+1].Index].Latitude; 
           w1lon = WayPointList[Task[ActiveTaskPoint+1].Index].Longitude;
         }

@@ -554,6 +554,7 @@ goto_bearing:
 			if ( ValidTaskPoint(ActiveTaskPoint) != false ) {
 				index = Task[ActiveTaskPoint].Index;
 				if (index>=0) {
+					// We have bug only if we are going to the finish
 					if (DerivedDrawInfo.ValidFinish) {
 						value = Units::ToDistance(DerivedDrawInfo.WaypointDistance);
 					} else {
@@ -561,9 +562,9 @@ goto_bearing:
 					}
 					valid=true;
 					if (value>99)
-						_stprintf(BufferValue, TEXT("%.0f"),value);
-					else
 						_stprintf(BufferValue, TEXT("%.1f"),value);
+					else
+						_stprintf(BufferValue, TEXT("%.2f"),value);
 				} else {
 					_stprintf(BufferValue, TEXT(NULLLONG));
 				}

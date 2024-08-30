@@ -129,7 +129,7 @@ struct DERIVED_INFO {
   // JMW moved calculated waypoint info here
 
   double WaypointBearing;
-  double WaypointDistance;
+  double WaypointDistance; // bug with this one if AAT & final waypoint
   double WaypointSpeed;
 
   // JMW thermal band data
