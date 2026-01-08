@@ -22,6 +22,8 @@
 #include "utils/array_adaptor.h"
 #include "Screen/Point.hpp"
 
+static bool LastFrameMountainVisible[20000]; // or WayPointList.size() max FIXME
+
 namespace {
 
 	MapWaypointLabel_t MapWaypointLabelList[200];
@@ -213,6 +215,41 @@ namespace {
 					}
 				}
 			}
+
+			// bool isMountainElem1 = (elem1->style == STYLE_MTTOP || elem1->style == STYLE_MTPASS);
+			// bool isMountainElem2 = (elem2->style == STYLE_MTTOP || elem2->style == STYLE_MTPASS);
+			// bool isMtPassElem1 = (elem1->style == STYLE_MTPASS);
+			// bool isMtPassElem2 = (elem2->style == STYLE_MTPASS);
+
+    		// StartupStore(_T(". elem1.altitude=<%f> - elem2.altitude=<%f>"), elem1->Altitude, elem2->Altitude); FIXME delete
+			// if (isMountainElem1 || isMountainElem2) {
+			// 	return (elem1->Altitude > elem2->Altitude);
+			// }
+			bool isMountain1 = (elem1->style == STYLE_MTTOP || elem1->style == STYLE_MTPASS);
+			bool isMountain2 = (elem2->style == STYLE_MTTOP || elem2->style == STYLE_MTPASS);
+
+			if (isMountain1 || isMountain2) {
+
+				int score1 = elem1->Altitude;
+				int score2 = elem2->Altitude;
+
+				// 1) Prefer passes over peaks
+				// if (elem1->style == STYLE_MTPASS) score1 += 800;
+				// if (elem2->style == STYLE_MTPASS) score2 += 800;
+
+				// 2) Temporal stability: keep what was already visible
+				if (elem1->wasVisible) score1 += 800;
+				if (elem2->wasVisible) score2 += 800;
+
+				// 3) Small dead-band to avoid churn
+				if (abs(score1 - score2) < 150) {
+					return elem1->index < elem2->index;
+				}
+
+				return score1 > score2;
+			}
+
+
 			// otherwise sort by arrival height (higher first)
 			return (elem1->AltArivalAGL > elem2->AltArivalAGL);
 		}
@@ -222,11 +259,13 @@ namespace {
 	void MapWaypointLabelAdd(const TCHAR (&Name)[size], const RasterPoint& pos,
 				 const TextInBoxMode_t *Mode,
 				 int AltArivalAGL, bool inTask, bool isLandable, 
-				 bool isThermal,  int index, short style){
+				 bool isThermal,  int index, short style, double Altitude){
 
 		static_assert(std::size(MapWaypointLabelList->Name) >= size, "possible buffer overflow" );
 
 		if (MapWaypointLabelListCount >= std::size(MapWaypointLabelList)-1) return;
+
+		StartupStore(_T(". elem INDEX=<%d>"), index);
 
 		MapWaypointLabel_t* E = &MapWaypointLabelList[MapWaypointLabelListCount];
 
@@ -239,6 +278,15 @@ namespace {
 		E->isThermal  = isThermal;
 		E->index = index;
 		E->style = style;
+		E->Altitude = Altitude; // for mountains sorting
+
+		bool wasVisi = false;
+		if (index >= 0 
+			&& static_cast<size_t>(index) < WayPointList.size() 
+			&& static_cast<size_t>(index) < std::size(LastFrameMountainVisible)) {
+			wasVisi = LastFrameMountainVisible[index];
+		}
+		E->wasVisible = wasVisi;
 
 		SortedWaypointLabelList[MapWaypointLabelListCount] = E;
 		MapWaypointLabelListCount++;
@@ -267,6 +315,13 @@ void MapWindow::DrawWaypointsNew(LKSurface& Surface, const RECT& rc, const Scree
 	};
 
 	if (WayPointList.empty()) return;
+
+	// FIXME I don't like this code iterating over another array size()
+	constexpr size_t MAX_MOUNTAIN_WAYPOINTS = std::size(LastFrameMountainVisible);
+	const size_t wpCount = std::min(WayPointList.size(), MAX_MOUNTAIN_WAYPOINTS);
+	for (size_t i = 0; i < wpCount; i++) {
+    	LastFrameMountainVisible[i] = false;
+	}
 
 	const TCHAR* sAltUnit = _T("");
 	if( (MapBox == (MapBox_t)mbUnboxedNoUnit) || (MapBox == (MapBox_t)mbBoxedNoUnit) ) {
@@ -579,7 +634,7 @@ void MapWindow::DrawWaypointsNew(LKSurface& Surface, const RECT& rc, const Scree
 						LabelPos,
 						&TextDisplayMode,
 						(int) Units::ToAltitude(tp.AltArivalAGL),
-						intask, islandable, isthermal, idx, tp.Style);
+						intask, islandable, isthermal, idx, tp.Style, tp.Altitude);
 			}
 		}
 	} // for all waypoints
@@ -593,6 +648,19 @@ void MapWindow::DrawWaypointsNew(LKSurface& Surface, const RECT& rc, const Scree
 		if (!TextInBox(Surface, &rc, E->Name, TextPos.x, TextPos.y, &(E->Mode), true)) {
 			continue;
 		}
+
+		// At this point, the label IS drawn : remember visibility
+		if (E->style == STYLE_MTTOP || E->style == STYLE_MTPASS) {
+			const int idx = E->index;
+
+			if (idx >= 0 
+				&& static_cast<size_t>(idx) < WayPointList.size() 
+				&& static_cast<size_t>(idx) < std::size(LastFrameMountainVisible)) {
+				
+					LastFrameMountainVisible[idx] = true;
+			}
+		}
+
 		if(E->isLandable) {
 			continue; // don't draw icon, already done in previous loop...
 		}

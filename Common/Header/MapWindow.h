@@ -251,6 +251,8 @@ typedef struct{
   bool isThermal;
   int  index;
   short style;
+  double Altitude; // used to sort mountains based on their altitude
+  bool wasVisible;     // if visible last frame, to improve decluttering algo
 }MapWaypointLabel_t;
 
 
